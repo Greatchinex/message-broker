@@ -7,6 +7,7 @@ enum TerminalCommand {
     Enqueue { payload: String },
     Dequeue,
     List,
+    Ack { job_id: String },
     Exit,
 }
 
@@ -36,11 +37,19 @@ pub fn run(broker: &mut BrokerState) {
                 broker.enqueue(payload);
             }
             TerminalCommand::Dequeue => {
-                if let Some(dequeued_job) = broker.dequeue() {
-                    println!("{:?}", dequeued_job)
+                if let Some(dequeued_job_id) = broker.dequeue() {
+                    println!("{:?}", dequeued_job_id)
                 } else {
                     println!("No jobs available")
                 }
+            }
+            TerminalCommand::Ack { job_id } => {
+                let ack_response = if broker.ack(job_id) {
+                    "acknowledged"
+                } else {
+                    "job not found"
+                };
+                println!("{ack_response}")
             }
             TerminalCommand::List => {
                 broker.list();
@@ -74,7 +83,7 @@ fn parse_command(command_line_input: &str) -> Result<TerminalCommand, String> {
             }
 
             let Some(cmd_payload) = split_full_command.get(1).copied() else {
-                return Err(format!("Value not found for set command"));
+                return Err(format!("Value not found for enqueue command"));
             };
 
             TerminalCommand::Enqueue {
@@ -87,6 +96,19 @@ fn parse_command(command_line_input: &str) -> Result<TerminalCommand, String> {
             }
 
             TerminalCommand::Dequeue
+        }
+        "ack" => {
+            if split_full_command.len() != 2 {
+                return Err(format!("Invalid ack command {}", command_line_input));
+            }
+
+            let Some(job_id) = split_full_command.get(1).copied() else {
+                return Err(format!("Value not found for ack command"));
+            };
+
+            TerminalCommand::Ack {
+                job_id: job_id.to_string(),
+            }
         }
         "list" => {
             if split_full_command.len() != 1 {
