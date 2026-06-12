@@ -1,5 +1,6 @@
+pub mod broker;
 pub mod repl;
 
 fn main() {
-    repl::executor::execute();
+    repl::executor::run();
 }

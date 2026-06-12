@@ -8,7 +8,7 @@ enum TerminalCommand {
     Exit,
 }
 
-pub fn execute() {
+pub fn run() {
     loop {
         println!("=====================PLEASE TYPE A COMMAND==============================");
         let mut command_input = String::new();
