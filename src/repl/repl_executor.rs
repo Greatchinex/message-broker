@@ -8,6 +8,7 @@ enum TerminalCommand {
     Dequeue,
     List,
     Ack { job_id: String },
+    Fail { job_id: String },
     Exit,
 }
 
@@ -44,12 +45,24 @@ pub fn run(broker: &mut BrokerState) {
                 }
             }
             TerminalCommand::Ack { job_id } => {
-                let ack_response = if broker.ack(job_id) {
+                let acked = if broker.ack(job_id) {
                     "acknowledged"
                 } else {
                     "job not found"
                 };
-                println!("{ack_response}")
+                println!("{acked}")
+            }
+            TerminalCommand::Fail { job_id } => {
+                let Some(nacked) = broker.fail(job_id) else {
+                    println!("job not found");
+                    continue;
+                };
+
+                if nacked {
+                    println!("job requeued");
+                } else {
+                    println!("max attempts reached");
+                }
             }
             TerminalCommand::List => {
                 broker.list();
@@ -107,6 +120,19 @@ fn parse_command(command_line_input: &str) -> Result<TerminalCommand, String> {
             };
 
             TerminalCommand::Ack {
+                job_id: job_id.to_string(),
+            }
+        }
+        "fail" => {
+            if split_full_command.len() != 2 {
+                return Err(format!("Invalid fail command {}", command_line_input));
+            }
+
+            let Some(job_id) = split_full_command.get(1).copied() else {
+                return Err(format!("Value not found for fail command"));
+            };
+
+            TerminalCommand::Fail {
                 job_id: job_id.to_string(),
             }
         }
