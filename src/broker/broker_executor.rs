@@ -1,6 +1,6 @@
 use std::collections::{HashMap, VecDeque};
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Job {
     pub id: String,
     pub payload: String,
