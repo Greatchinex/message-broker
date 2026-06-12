@@ -1,14 +1,16 @@
 use std::{io, process};
 
+use crate::broker::broker_executor::BrokerState;
+
 #[derive(Debug)]
 enum TerminalCommand {
-    Enqueue { value: String },
+    Enqueue { payload: String },
     Dequeue,
     List,
     Exit,
 }
 
-pub fn execute() {
+pub fn run(broker: &mut BrokerState) {
     loop {
         println!("=====================PLEASE TYPE A COMMAND==============================");
         let mut command_input = String::new();
@@ -30,14 +32,18 @@ pub fn execute() {
         };
 
         match cmd {
-            TerminalCommand::Enqueue { value } => {
-                println!("Enqueue {value}");
+            TerminalCommand::Enqueue { payload } => {
+                broker.enqueue(payload);
             }
             TerminalCommand::Dequeue => {
-                println!("Dequeue");
+                if let Some(dequeued_job) = broker.dequeue() {
+                    println!("{:?}", dequeued_job)
+                } else {
+                    println!("No jobs available")
+                }
             }
             TerminalCommand::List => {
-                println!("List");
+                broker.list();
             }
             TerminalCommand::Exit => {
                 println!("Exiting program...");
@@ -67,12 +73,12 @@ fn parse_command(command_line_input: &str) -> Result<TerminalCommand, String> {
                 return Err(format!("Invalid enqueue command {}", command_line_input));
             }
 
-            let Some(cmd_value) = split_full_command.get(1).copied() else {
+            let Some(cmd_payload) = split_full_command.get(1).copied() else {
                 return Err(format!("Value not found for set command"));
             };
 
             TerminalCommand::Enqueue {
-                value: cmd_value.to_string(),
+                payload: cmd_payload.to_string(),
             }
         }
         "dequeue" => {
