@@ -32,10 +32,20 @@ impl BrokerState {
         self
     }
 
-    pub fn dequeue(&mut self) -> Option<Job> {
-        self.queued.pop_front().inspect(|job| {
-            self.processing.insert(job.id.to_string(), job.clone());
-        })
+    pub fn dequeue(&mut self) -> Option<String> {
+        // self.queued.pop_front().inspect(|job| {
+        //     self.processing.insert(job.id.to_string(), job.clone());
+        // })
+
+        if let Some(dequeued_job) = self.queued.pop_front() {
+            let job_id = dequeued_job.id.to_string();
+            self.processing
+                .insert(dequeued_job.id.to_string(), dequeued_job);
+
+            Some(job_id)
+        } else {
+            None
+        }
     }
 
     pub fn ack(&mut self, job_id: String) -> bool {

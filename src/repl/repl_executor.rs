@@ -37,8 +37,8 @@ pub fn run(broker: &mut BrokerState) {
                 broker.enqueue(payload);
             }
             TerminalCommand::Dequeue => {
-                if let Some(dequeued_job) = broker.dequeue() {
-                    println!("{:?}", dequeued_job)
+                if let Some(dequeued_job_id) = broker.dequeue() {
+                    println!("{:?}", dequeued_job_id)
                 } else {
                     println!("No jobs available")
                 }
