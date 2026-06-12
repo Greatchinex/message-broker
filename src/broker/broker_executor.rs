@@ -38,7 +38,24 @@ impl BrokerState {
         })
     }
 
+    pub fn ack(&mut self, job_id: String) -> bool {
+        match self.processing.remove(&job_id) {
+            Some(_) => return true,
+            None => return false,
+        }
+    }
+
     pub fn list(&self) {
-        println!("{:?}", self)
+        println!("Queued: \n");
+        for single_job in &self.queued {
+            println!("- {} {:?}", single_job.id, single_job.payload);
+        }
+
+        println!("\n");
+
+        println!("Processing: \n");
+        for (key, value) in &self.processing {
+            println!("- {} {:?}", key, value.payload);
+        }
     }
 }
