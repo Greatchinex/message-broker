@@ -22,9 +22,8 @@ impl BrokerState {
         self
     }
 
-    pub fn dequeue(&mut self) -> &Self {
-        self.queued.remove(0);
-        self
+    pub fn dequeue(&mut self) -> Option<Job> {
+        self.queued.pop_front()
     }
 
     pub fn list(&self) {
