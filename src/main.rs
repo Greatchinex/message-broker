@@ -9,5 +9,7 @@ fn main() {
     // NOTE: INITIAL IMPLEMENTATION IS A COMMAND LINE REPL. BUT IT WILL BE EXTENDED TO TAKE DIFFERENT SOURCES
 
     let mut broker = BrokerState::new();
+
+    broker.replay();
     repl_executor::run(&mut broker);
 }
