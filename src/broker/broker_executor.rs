@@ -83,32 +83,49 @@ impl BrokerState {
     }
 
     pub fn list(&self) {
-        println!("Queued:");
-        for single_job in &self.queued {
-            println!(
-                "- {} {:?} ({}/{})",
-                single_job.id, single_job.payload, single_job.attempt, single_job.max_attempts
-            );
+        println!("================ MESSAGE BROKER ================ \n");
+
+        println!("Queued Jobs ({})", self.queued.len());
+        println!("-----------------------------------------------");
+        if self.queued.is_empty() {
+            println!("(empty)");
+        } else {
+            for single_job in &self.queued {
+                println!(
+                    "- {} {:?} attempts: {}/{}",
+                    single_job.id, single_job.payload, single_job.attempt, single_job.max_attempts
+                );
+            }
         }
 
         println!("\n");
 
-        println!("Processing:");
-        for (key, value) in &self.processing {
-            println!(
-                "- {} {:?} ({}/{})",
-                key, value.payload, value.attempt, value.max_attempts
-            );
+        println!("Processing Jobs ({})", self.processing.len());
+        println!("-----------------------------------------------");
+        if self.processing.is_empty() {
+            println!("(empty)");
+        } else {
+            for (key, value) in &self.processing {
+                println!(
+                    "- {} {:?} attempts: {}/{}",
+                    key, value.payload, value.attempt, value.max_attempts
+                );
+            }
         }
 
         println!("\n");
 
-        println!("Dead Letter:");
-        for (key, value) in &self.dead_letter {
-            println!(
-                "- {} {:?} ({}/{})",
-                key, value.payload, value.attempt, value.max_attempts
-            );
+        println!("Dead Letter Queue ({})", self.dead_letter.len());
+        println!("-----------------------------------------------");
+        if self.dead_letter.is_empty() {
+            println!("(empty)");
+        } else {
+            for (key, value) in &self.dead_letter {
+                println!(
+                    "- {} {:?} attempts: {}/{}",
+                    key, value.payload, value.attempt, value.max_attempts
+                );
+            }
         }
     }
 }
