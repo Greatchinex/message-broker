@@ -4,13 +4,17 @@ use std::collections::{HashMap, VecDeque};
 pub struct Job {
     pub id: String,
     pub payload: String,
+    pub attempt: u64,
+    pub max_attempts: u64,
 }
 
 #[derive(Debug)]
 pub struct BrokerState {
     pub queued: VecDeque<Job>,
     pub processing: HashMap<String, Job>,
+    pub dead_letter: HashMap<String, Job>,
     pub next_id: u64,
+    pub default_max_attempts: u64,
 }
 
 impl BrokerState {
@@ -18,7 +22,9 @@ impl BrokerState {
         BrokerState {
             queued: VecDeque::new(),
             processing: HashMap::new(),
+            dead_letter: HashMap::new(),
             next_id: 1,
+            default_max_attempts: 3,
         }
     }
 
@@ -26,6 +32,8 @@ impl BrokerState {
         self.queued.push_back(Job {
             id: format!("job-{}", self.next_id),
             payload,
+            attempt: 0,
+            max_attempts: self.default_max_attempts,
         });
 
         self.next_id = self.next_id + 1;
@@ -55,17 +63,69 @@ impl BrokerState {
         }
     }
 
+    pub fn fail(&mut self, job_id: String) -> Option<bool> {
+        let Some(failed_job) = self.processing.remove(&job_id) else {
+            return None;
+        };
+
+        if failed_job.attempt >= failed_job.max_attempts {
+            self.dead_letter
+                .insert(failed_job.id.to_string(), failed_job);
+            return Some(false);
+        }
+
+        self.queued.push_back(Job {
+            attempt: failed_job.attempt + 1,
+            ..failed_job
+        });
+
+        Some(true)
+    }
+
     pub fn list(&self) {
-        println!("Queued: \n");
-        for single_job in &self.queued {
-            println!("- {} {:?}", single_job.id, single_job.payload);
+        println!("================ MESSAGE BROKER ================ \n");
+
+        println!("Queued Jobs ({})", self.queued.len());
+        println!("-----------------------------------------------");
+        if self.queued.is_empty() {
+            println!("(empty)");
+        } else {
+            for single_job in &self.queued {
+                println!(
+                    "- {} {:?} attempts: {}/{}",
+                    single_job.id, single_job.payload, single_job.attempt, single_job.max_attempts
+                );
+            }
         }
 
         println!("\n");
 
-        println!("Processing: \n");
-        for (key, value) in &self.processing {
-            println!("- {} {:?}", key, value.payload);
+        println!("Processing Jobs ({})", self.processing.len());
+        println!("-----------------------------------------------");
+        if self.processing.is_empty() {
+            println!("(empty)");
+        } else {
+            for (key, value) in &self.processing {
+                println!(
+                    "- {} {:?} attempts: {}/{}",
+                    key, value.payload, value.attempt, value.max_attempts
+                );
+            }
+        }
+
+        println!("\n");
+
+        println!("Dead Letter Queue ({})", self.dead_letter.len());
+        println!("-----------------------------------------------");
+        if self.dead_letter.is_empty() {
+            println!("(empty)");
+        } else {
+            for (key, value) in &self.dead_letter {
+                println!(
+                    "- {} {:?} attempts: {}/{}",
+                    key, value.payload, value.attempt, value.max_attempts
+                );
+            }
         }
     }
 }
