@@ -3,6 +3,7 @@ use crate::repl::repl_executor;
 
 pub mod broker;
 pub mod repl;
+pub mod storage;
 
 fn main() {
     // NOTE: INITIAL IMPLEMENTATION IS A COMMAND LINE REPL. BUT IT WILL BE EXTENDED TO TAKE DIFFERENT SOURCES

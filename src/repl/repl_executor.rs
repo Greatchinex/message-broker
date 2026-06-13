@@ -35,25 +35,53 @@ pub fn run(broker: &mut BrokerState) {
 
         match cmd {
             TerminalCommand::Enqueue { payload } => {
-                broker.enqueue(payload);
+                if let Err(error) = broker.enqueue(payload) {
+                    println!("{error}");
+                    continue;
+                }
             }
             TerminalCommand::Dequeue => {
-                if let Some(dequeued_job_id) = broker.dequeue() {
-                    println!("{:?}", dequeued_job_id)
+                let dequeue_result = broker.dequeue();
+
+                if let Err(error) = dequeue_result {
+                    println!("{error}");
+                    continue;
+                }
+
+                if let Ok(Some(job)) = dequeue_result {
+                    println!("{}", job)
                 } else {
                     println!("No jobs available")
                 }
             }
             TerminalCommand::Ack { job_id } => {
-                let acked = if broker.ack(job_id) {
-                    "acknowledged"
-                } else {
-                    "job not found"
+                let ack_result = broker.ack(job_id);
+
+                if let Err(error) = ack_result {
+                    println!("{error}");
+                    continue;
+                }
+
+                let Ok(acked) = ack_result else {
+                    println!("unknown error");
+                    continue;
                 };
-                println!("{acked}")
+
+                if acked {
+                    println!("acknowledged")
+                } else {
+                    println!("job not found")
+                }
             }
             TerminalCommand::Fail { job_id } => {
-                let Some(nacked) = broker.fail(job_id) else {
+                let nack_result = broker.fail(job_id);
+
+                if let Err(error) = nack_result {
+                    println!("{error}");
+                    continue;
+                }
+
+                let Ok(Some(nacked)) = nack_result else {
                     println!("job not found");
                     continue;
                 };
