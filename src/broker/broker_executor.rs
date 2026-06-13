@@ -4,7 +4,7 @@ use std::collections::{HashMap, VecDeque};
 pub struct Job {
     pub id: String,
     pub payload: String,
-    pub attempts: u64,
+    pub attempt: u64,
     pub max_attempts: u64,
 }
 
@@ -12,6 +12,7 @@ pub struct Job {
 pub struct BrokerState {
     pub queued: VecDeque<Job>,
     pub processing: HashMap<String, Job>,
+    pub dead_letter: HashMap<String, Job>,
     pub next_id: u64,
     pub default_max_attempts: u64,
 }
@@ -21,6 +22,7 @@ impl BrokerState {
         BrokerState {
             queued: VecDeque::new(),
             processing: HashMap::new(),
+            dead_letter: HashMap::new(),
             next_id: 1,
             default_max_attempts: 3,
         }
@@ -30,7 +32,7 @@ impl BrokerState {
         self.queued.push_back(Job {
             id: format!("job-{}", self.next_id),
             payload,
-            attempts: 0,
+            attempt: 0,
             max_attempts: self.default_max_attempts,
         });
 
@@ -66,12 +68,14 @@ impl BrokerState {
             return None;
         };
 
-        if failed_job.attempts > failed_job.max_attempts {
+        if failed_job.attempt >= failed_job.max_attempts {
+            self.dead_letter
+                .insert(failed_job.id.to_string(), failed_job);
             return Some(false);
         }
 
         self.queued.push_back(Job {
-            attempts: failed_job.attempts + 1,
+            attempt: failed_job.attempt + 1,
             ..failed_job
         });
 
@@ -79,21 +83,31 @@ impl BrokerState {
     }
 
     pub fn list(&self) {
-        println!("Queued: \n");
+        println!("Queued:");
         for single_job in &self.queued {
             println!(
                 "- {} {:?} ({}/{})",
-                single_job.id, single_job.payload, single_job.attempts, single_job.max_attempts
+                single_job.id, single_job.payload, single_job.attempt, single_job.max_attempts
             );
         }
 
         println!("\n");
 
-        println!("Processing: \n");
+        println!("Processing:");
         for (key, value) in &self.processing {
             println!(
                 "- {} {:?} ({}/{})",
-                key, value.payload, value.attempts, value.max_attempts
+                key, value.payload, value.attempt, value.max_attempts
+            );
+        }
+
+        println!("\n");
+
+        println!("Dead Letter:");
+        for (key, value) in &self.dead_letter {
+            println!(
+                "- {} {:?} ({}/{})",
+                key, value.payload, value.attempt, value.max_attempts
             );
         }
     }
